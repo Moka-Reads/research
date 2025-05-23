@@ -12,7 +12,7 @@
       url: "mokareads.org"
     ),
   ),
-  abstract: lorem(100),
+  abstract: include "abstract.typ",
   bibliography: bibliography("refs.bib", full: true),
 )
 
@@ -28,41 +28,62 @@ We will firstly discuss about the market, having a look at different books, thei
 thereafter, we can start looking at our problem formulation, ways to approach it, and lastly we will look at results for determining the optimal prices
 for publications in the MoKa Reads Collective or a minimum set price.
 
-= Market and Price/Page Relationship
+= Market Analysis and Price-per-Page Relationship
 
-We firstly take a look into the market
-and determine a relationship with book's prices. While prices of books per organization can depend on their contract with the writer, demand in the technology,
-organization's margins;  for simplicity purposes with the data we have gathered, we are going to look at the data mainly with a price and page count point-of-view.
+// We firstly take a look into the market
+// and determine a relationship with book's prices. While prices of books per organization can depend on their contract with the writer, demand in the technology,
+// organization's margins;  for simplicity purposes with the data we have gathered, we are going to look at the data mainly with a price and page count point-of-view.
 
-In this paper, all prices are assumed to be under the Canadian Dollar (CAD) unless explicitly stated not to be. To gather our data of different books in the programming
-category which our publications focus on, we make use of the Google Books API, this API is convenient to use as it provides easy ways to query, get price and page count information,
-free with rate-limit usage, and doesn't involve us needing to scrape websites.
+To begin, we analyze the current programming book market to explore the relationship between book price and page count. Although pricing can be influenced by factors
+such as author contracts, content demand, and publisher margin strategies, we restrict our focus to two primary variables: price and page count.
+
+In this paper, all prices are assumed to be under the Canadian Dollar (CAD) unless explicitly stated not to be.
+Data was collected using the Google Books API, which provides convenient access to structured information such
+as book price and page count. This approach eliminates the need for web scraping and allows for efficient data retrieval under usage rate limits.
+
+// To gather our data of different books in the programming
+// category which our publications focus on,
+// we make use of the Google Books API, this API is convenient to use as it provides easy ways to query, get price and page count information,
+// free with rate-limit usage, and doesn't involve us needing to scrape websites.
 
 // iffy on this, may need to change later
-From our data, we do require to clean it to remove any entry which does not include their price or page count, and we do have a flag to check whether the book's format is an ebook
-or not, in our data all books are ebooks. #text(fill: color.red, [This isn't an issue, as when we come to getting results, many of the distributions are ebooks, so their price bounds are the most critical
-  to determine, while determining paperback can be 1.5 times the price, and hardcover 1.5 times the paperback's]).
+// From our data, we do require to clean it to remove any entry which does not include their price or page count, and we do have a flag to check whether the book's format is an ebook
+// or not, in our data all books are ebooks. #text(fill: color.red, [This isn't an issue, as when we come to getting results, many of the distributions are ebooks, so their price bounds are the most critical
+//   to determine, while determining paperback can be 1.5 times the price, and hardcover 1.5 times the paperback's]).
 
-From our dataset, we have the following statistical description for the page count and price of the books.
+Given that the majority of our publications will be released in digital format, our pricing analysis focuses on ebooks. This is consistent with the format of our dataset, which exclusively contains ebooks.
+Print formats such as paperback and hardcover are considered secondary and are typically estimated by applying standard multipliers—1.5× for paperback over ebook, and an additional 1.5× for hardcover over paperback. For our purposes
+we will keep the price within the price bound we develop.
 
+// From our dataset, we have the following statistical description for the page count and price of the books.
+After cleaning the dataset to remove entries missing either price or page count, we obtained summary statistics shown in #ref(<stats_description>).
 #figure([
   #table(
     columns: 3, rows: auto,
     ..csv("figures/stats.csv").flatten()
   )
-], caption: "Descriptive statistics of page count and price for programming books retrieved from Google Books API")
+],
+caption: "Descriptive statistics of page count and price for programming books retrieved from Google Books API")<stats_description>
 
-While we don't immediately interpret the data just from its statistic description, we can follow better from the distribution
-when these are plotted.
+// While we don't immediately interpret the data just from its statistic description, we can follow better from the distribution
+// when these are plotted.
+While the table provides a statistical overview, further insight is gained through visualization.
+#ref(<price_vs_pagecount>) shows a scatter plot of price versus page count distribution. A notable concentration of titles lies within the 200–400 page range, which
+we expect our publications in the collective to target.
+// where prices tend to cluster around \$50. This observation motivates setting $50 as a practical upper bound for print formats, with ebook prices targeting the more accessible midpoint of $25–30.
+
 
 #figure(
-  image("figures/price_vs_pages.png"),
+  image("figures/price_vs_pages.png", width: 82%),
   caption: "Scatter Plot of Price vs. Page Count"
-)
+)<price_vs_pagecount>
 
-If we focus on the the section for page count between 200-400 pages, as this is the range our books will most likely follow,
-we can see the price concentrates at \$50. This price would be a good maximum price to set for our print formats, and for our ebooks
-we would want to have it closer to the halfway mark, $\$25^+$.
+// If we focus on the the section for page count between 200-400 pages, as this is the range our books will most likely follow,
+// we can see the price concentrates at \$50. This price would be a good maximum price to set for our print formats, and for our ebooks
+// we would want to have it closer to the halfway mark, $\$25^+$.
+
+As illustrated in #ref(<price_vs_pagecount>), books within the 200–400 page range cluster around a price point of approximately $\$50$.
+  This suggests that \$50 may serve as an upper bound for our formats, while pricing could reasonably target a midpoint range of \$25–30 to improve affordability.
 
 = The Optimization Problem
 
@@ -193,10 +214,57 @@ The following parameters are used in our optimization solver:
   caption: [Parameters for SLSQP and TRCP solvers]
 )
 
+With these parameters we have the following results for each corresponding format of the royalty rate of the platform:
 
 #figure(
   table(columns: 5, rows: auto, ..csv("figures/pricing_comparison.csv").flatten()),
   caption: [Comparison of optimal prices and royalties obtained using SLSQP and Trust-Region Constrained methods for multi-format royalty-constrained pricing.]
+)
+
+#pagebreak()
+
+#heading(depth: 1, [Appendix], numbering: none)
+
+#heading(depth: 2, [A. Pseudo-Code], numbering: none)
+
+#rect(stroke: 1pt+black, outset: 10pt,
+  ```
+  Inputs:
+      n          ← number of publishing formats
+      r[1..n]    ← royalty rates per format
+      p_min      ← global minimum price
+      p_max      ← global maximum price
+      λ_p        ← price penalty weight
+      δ          ← minimum price spacing (normalized)
+      ε          ← minimum royalty-per-unit spacing
+
+  Initialize:
+      For each format i = 1 to n:
+          Assign normalized price variable x_i ∈ [0, 1]
+          Set initial guess x_i^(0) ← rank(r_i) / (R - 1)
+
+  Define:
+      p_i(x_i)     ← p_min + x_i * (p_max - p_min)
+      objective(x) ← ( -∑ r_i * p_i(x_i) + λ_p * (∑ p_i(x_i))^2 ) / n
+
+  Subject to constraints:
+    For i = 1 to n - 1:
+      x_{i+1} - x_i ≥ δ                                [Price ordering]
+      r_i * p_i(x_i) ≥ r_{i+1} * p_{i+1}(x_{i+1}) + ε  [Royalty ordering]
+      For all i:
+          0 ≤ x_i ≤ 1                                  [Normalized bounds]
+
+  Solve:
+    Use a constrained optimization algorithm (e.g., SLSQP or Trust-Region Constrained) to find x* = argmin objective(x) subject to constraints
+
+  Output:
+      For each i:
+          Price:   p_i = p_min + x_i * (p_max - p_min)
+          Royalty: r_i * p_i
+      Report:
+          Total Price   = ∑ p_i
+          Total Royalty = ∑ r_i * p_i
+  ```
 )
 
 #pagebreak()
