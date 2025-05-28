@@ -9,7 +9,7 @@
       organization: [MoKa Reads Collective],
       location: [],
       email: "mustafif.khan@mokareads.org",
-      url: "mokareads.org"
+      url: "mokareads.org",
     ),
   ),
   abstract: include "abstract.typ",
@@ -57,13 +57,16 @@ we will keep the price within the price bound we develop.
 
 // From our dataset, we have the following statistical description for the page count and price of the books.
 After cleaning the dataset to remove entries missing either price or page count, we obtained summary statistics shown in #ref(<stats_description>).
-#figure([
-  #table(
-    columns: 3, rows: auto,
-    ..csv("figures/stats.csv").flatten()
-  )
-],
-caption: "Descriptive statistics of page count and price for programming books retrieved from Google Books API")<stats_description>
+#figure(
+  [
+    #table(
+      columns: 3,
+      rows: auto,
+      ..csv("figures/stats.csv").flatten(),
+    )
+  ],
+  caption: "Descriptive statistics of page count and price for programming books retrieved from Google Books API",
+)<stats_description>
 
 // While we don't immediately interpret the data just from its statistic description, we can follow better from the distribution
 // when these are plotted.
@@ -72,10 +75,9 @@ While the table provides a statistical overview, further insight is gained throu
 we expect our publications in the collective to target.
 // where prices tend to cluster around \$50. This observation motivates setting $50 as a practical upper bound for print formats, with ebook prices targeting the more accessible midpoint of $25–30.
 
-
 #figure(
   image("figures/price_vs_pages.png", width: 82%),
-  caption: "Scatter Plot of Price vs. Page Count"
+  caption: "Scatter Plot of Price vs. Page Count",
 )<price_vs_pagecount>
 
 // If we focus on the the section for page count between 200-400 pages, as this is the range our books will most likely follow,
@@ -83,7 +85,7 @@ we expect our publications in the collective to target.
 // we would want to have it closer to the halfway mark, $\$25^+$.
 
 As illustrated in #ref(<price_vs_pagecount>), books within the 200–400 page range cluster around a price point of approximately $\$50$.
-  This suggests that \$50 may serve as an upper bound for our formats, while pricing could reasonably target a midpoint range of \$25–30 to improve affordability.
+This suggests that \$50 may serve as an upper bound for our formats, while pricing could reasonably target a midpoint range of \$25–30 to improve affordability.
 
 = The Optimization Problem
 
@@ -103,7 +105,7 @@ and a corresponding royalty rate $r_i in (0, 1)$ that determines the revenue ear
 consistency and flexibility, we express each price as a normalized variable $x_i in (0, 1)$, such that:
 
 $
-  p_i = p_min + x_i (p_"max" - p_"min")
+p_i = p_min + x_i (p_"max" - p_"min")
 $
 
 This formulation allows the optimization to occur over the unit interval, while still mapping to actual price values within a global price bound.
@@ -116,20 +118,20 @@ to be rewarded by choosing to buy the publication from platforms which offer hig
 is a convex combination of maximizing total royalty and penalizing the total squared price:
 
 $
-  max_(upright(x in [0, 1]^n)) quad [sum_(i=1)^n r_i p_i - lambda_p (sum_(i=1)^n p_i)^2]
+max_(upright(x in [0, 1]^n)) quad [sum_(i=1)^n r_i p_i - lambda_p (sum_(i=1)^n p_i)^2]
 $
 
 Equivalently, this can be posed as a minimization problem for numerical optimization:
 
 $
-  min_(upright(x in [0, 1]^n)) quad (-sum_(i=1)^n r_i p_i + lambda_p (sum_(i=1)^n p_i)^2)/n
+min_(upright(x in [0, 1]^n)) quad (-sum_(i=1)^n r_i p_i + lambda_p (sum_(i=1)^n p_i)^2)/n
 $
 
 Here, the parameter $lambda_p >= 0$ governs the trade-off between maximizing roayalties and discouraging price inflation.
 A higher $lambda_p$ places greater emphasis on reducing the overall price, thereby improving affordability.
 
 #align(center)[
-*Constraints*
+  *Constraints*
 ]
 
 To ensure logical structure and consistency in pricing and royalty assignment, we impose two key sets of contraints onto our problem:
@@ -140,36 +142,34 @@ To ensure logical structure and consistency in pricing and royalty assignment, w
 1. *Monotocity in Price Levels:* To prevent illogical pricing where a format perceived to be of lower value is priced above a higher-tier format, we require strictly increasing normalized price levels:
 
 $
-  x_(i+1) - x_i >= delta quad forall i=1, ..., n-1
+x_(i+1) - x_i >= delta quad forall i=1, ..., n-1
 $
 
 2. *Monotocity in Royalty-per-Unit:* To incentivize distribution through high-royalty platforms and maintain economic alignment, we require that the effective royalty earned per unit decreases across formats of decreasing royalty rate:
-
 
 // While we ensure price ordering which is what affects the consumers or readers who wish to purchase the publication,
 // on the other end, the "profit" or royalty-per-unit. The royalty-per-unit ordering ensures that platforms with higher
 // royalty rates yield grater or equal royalty-per-unit than those with lower rates:
 
 $
-  r_i p_i >= r_(i+1) p_(i+1) + epsilon quad forall i=1, ..., n-1
+r_i p_i >= r_(i+1) p_(i+1) + epsilon quad forall i=1, ..., n-1
 $
 
 #v(5pt)
 #align(center)[
-*Initialization Strategy*
+  *Initialization Strategy*
 ]
 
-To help acheive convergence faster and add bias the optimization towards realistic solutions, we propose a smart initialization based on the ordinal rank of the royalty rate. Let $R(r_i)$
+To help acheive convergence faster and add bias to the optimization towards realistic solutions, we propose a smart initialization based on the ordinal rank of the royalty rate. Let $R(r_i)$
 denote the rank of format $i$'s royalty rate among all formats, with rank $0$ being the highest. Let $U$ denote the number of unique royalty tiers, then
 the initial guess for each normalized price is given by:
 
 $
-  x_i^((0)) = R(r_i)/(U-1)
+x_i^((0)) = R(r_i)/(U-1)
 $
 
 This initialization method places formats with higher royalty rates closer to the lower bound of the price range, thus having our model bias
 towards our affordability goal.
-
 
 = Applying the Model to Determine Minimum Set Prices
 
@@ -177,57 +177,122 @@ towards our affordability goal.
 // both inequality constraints and variable bounds, and is a well suited method for our structured pricing optimization problem.
 
 // rewrite this in our words:
-#text(fill: color.red, [To solve the royalty-constrained pricing optimization problem, we employ gradient-based constrained optimization methods such as Sequential Least Squares Programming (_SLSQP_) and the Trust-Region Constrained (_trust-constr_) algorithm. These methods are well-suited for problems that feature nonlinear objective functions and nonlinear inequality constraints, as is the case here where we balance royalty maximization against pricing regularization while enforcing inter-format royalty and price orderings. SLSQP is particularly attractive due to its efficient handling of both equality and inequality constraints, along with variable bounds, in a relatively low-dimensional space. Alternatively, the trust-constr method provides a more robust framework by incorporating trust-region steps and allowing for Jacobian and Hessian approximations, which improves stability in the presence of tightly coupled constraints. Both methods leverage the smoothness and structure of the problem to converge efficiently to locally optimal solutions that satisfy all pricing and royalty conditions. This makes them strong candidates for reliably determining minimum viable prices across publishing formats while maintaining economic consistency.])
+// #text(fill: color.red, [To solve the royalty-constrained pricing optimization problem, we employ gradient-based constrained optimization methods such as Sequential Least Squares Programming (_SLSQP_) and the Trust-Region Constrained (_trust-constr_) algorithm. These methods are well-suited for problems that feature nonlinear objective functions and nonlinear inequality constraints, as is the case here where we balance royalty maximization against pricing regularization while enforcing inter-format royalty and price orderings. SLSQP is particularly attractive due to its efficient handling of both equality and inequality constraints, along with variable bounds, in a relatively low-dimensional space. Alternatively, the trust-constr method provides a more robust framework by incorporating trust-region steps and allowing for Jacobian and Hessian approximations, which improves stability in the presence of tightly coupled constraints. Both methods leverage the smoothness and structure of the problem to converge efficiently to locally optimal solutions that satisfy all pricing and royalty conditions. This makes them strong candidates for reliably determining minimum viable prices across publishing formats while maintaining economic consistency.])
 
-Let us consider the following platforms that are used for self-publishing by the MoKa Reads Collective: MoKa Reads Shop, Kindle Direct Publishing (KDP), Leanpub, Kobo, Google Books and Barnes \& Noble (B\&N).
-These plaforms have the following royalty rates, it is assumed the format is Ebook, unless explicitly stated otherwise:
+// Let us consider the following platforms that are used for self-publishing by the MoKa Reads Collective: MoKa Reads Shop, Kindle Direct Publishing (KDP), Leanpub, Kobo, Google Books and Barnes \& Noble (B\&N).
+// These plaforms have the following royalty rates, it is assumed the format is Ebook, unless explicitly stated otherwise:
 
-#figure(table(columns: 2, rows: auto,
-  [Platform], [Royalty],
-  [MoKa Reads Shop], $87%$,
-  [Leanpub], [$80%$ #ref(<leanpub>)],
-  [Kobo, Google Books, B\&N], $70%$,
-  [KDP Paperback], [$60%$ #ref(<noauthor_paperback_nodate>)],
-  [B\&N Print], [$55%$ #ref(<barnesnoble_make_nodate>)],
-  [KDP Ebook], [$35%$ #ref(<noauthor_ebook_nodate>)]
-), caption: [Platform Format Royalty Rates])
+To solve the royalty-constrained pricing optimization problem, we employ two gradient-based nonlinear optimization methods: Sequential Least Squares Programming (SLSQP) and the Trust Region Constrained (trust-constr) algorithm.
+These methods are well-suited for problems that involve smooth objective functions and nonlinear inequality constraints—characteristics inherent to our pricing model, which simultaneously seeks to maximize royalties,
+enforce monotonicity, and preserve pricing fairness.
 
-#text(fill: color.red, [
-It is important to note that the reason our royalty rate for KDP is $35%$ is due to our ebook prices being over the
-maximum of $9.99$ that KDP requires to be eligible for its $70%$ royalty option. Another thing to remember is the royalty-per-unit
-for print formats (paperback, hardcover) is the earnings from the royalty, and does not include printing costs, so while for ebook,
-we can synonymously say the royalty is the profit margin, the same cannot be said for print formats, and is the reason we say the prices
-are the minimum set, while the optimal prices for ebooks will not change if the book is between 200-400 pages, the same guarantee cannot be made
-for print formats, and may be be adjusted due to print costs.])
+The SLSQP algorithm, originally proposed by Kraft (1988) #ref(<kraft1988sqp>), is a quasi-Newton method that handles both equality and inequality constraints efficiently.
+It updates the solution iteratively using sequential quadratic programming steps, making it particularly suitable for small- to medium-scale problems with smooth constraint structure.
 
-The following parameters are used in our optimization solver:
+By contrast, the trust-region constrained method (Byrd, Schnabel, and Shultz, 1987) #ref(<byrd_trust_1987>) provides a more robust approach by solving a local approximation of the problem within a dynamically updated region where
+the model is trusted to be accurate. It incorporates both first- and second-order derivative information (Jacobian and Hessian) and uses barrier or merit functions to handle inequality constraints. This makes it
+more stable for tightly coupled constraint systems or cases where convergence is sensitive to initial guesses or step sizes.
+
+We now apply the model to determine optimal pricing across self-publishing platforms used by the MoKa Reads Collective. The selected platforms, with corresponding formats and royalty rates, are shown below:
+
+// #figure(table(
+//   columns: 2,
+//   rows: auto,
+//   [Platform],
+//   [Royalty],
+//   [MoKa Reads Shop],
+//   $92.5%$,
+//   [Leanpub],
+//   [$80%$ #ref(<leanpub>)],
+//   [Kobo, Google Books, B\&N],
+//   $70%$,
+//   [KDP Paperback],
+//   [$60%$ #ref(<noauthor_paperback_nodate>)],
+//   [B\&N Print],
+//   [$55%$ #ref(<barnesnoble_make_nodate>)],
+//   [KDP Ebook],
+//   [$35%$ #ref(<noauthor_ebook_nodate>)],
+// ), caption: [Platform Format Royalty Rates])
+
+#figure(table(
+  columns: 3,
+  rows: auto,
+  ..csv("figures/platforms.csv").flatten(),
+))
+
+// #text(fill: color.red, [
+//   It is important to note that the reason our royalty rate for KDP is $35%$ is due to our ebook prices being over the
+//   maximum of $9.99$ that KDP requires to be eligible for its $70%$ royalty option. Another thing to remember is the royalty-per-unit
+//   for print formats (paperback, hardcover) is the earnings from the royalty, and does not include printing costs, so while for ebook,
+//   we can synonymously say the royalty is the profit margin, the same cannot be said for print formats, and is the reason we say the prices
+//   are the minimum set, while the optimal prices for ebooks will not change if the book is between 200-400 pages, the same guarantee cannot be made
+// for print formats, and may be be adjusted due to print costs.])
+*Note*: The 35% rate for KDP eBooks arises because our prices exceed the $\$9.99$ cap for eligibility under their $70%$ royalty program #ref(<noauthor_ebook_nodate>). For print formats, royalties reflect author revenue before printing costs,
+reinforcing our interpretation of these as minimum set prices. Ebook prices, in contrast, are profit-aligned.
+
+The following parameters are used in our optimization procedure:
 
 #figure(
-  table(columns: 2, rows: auto,
-  [Parameter], [Value],
-  $(p_"min", p_"max")$, $(8.99, 50)$,
-  $delta$, $0.05$,
-  $epsilon$, $0.25$,
-  $lambda_p$, $0.05$,
-  $r$, $[0.87, 0.8, 0.7, 0.6, 0.55]$
+  table(
+    columns: 2,
+    rows: auto,
+    [Parameter],
+    [Value],
+    $(p_"min", p_"max")$,
+    $(8.99, 50)$,
+    $delta$,
+    $0.05$,
+    $epsilon$,
+    $0.25$,
+    $lambda_p$,
+    $0.05$,
+    $r$,
+    $[0.925, 0.8, 0.7, 0.6, 0.55]$,
   ),
-  caption: [Parameters for SLSQP and TRCP solvers]
+  caption: [Parameters for SLSQP and TRCP solvers],
 )
 
-With these parameters we have the following results for each corresponding format of the royalty rate of the platform:
+#align(center)[*Optimization Results*]
+
+We ran both SLSQP and Trust-Region solvers using the same problem formulation and constraints.
+Remarkably, both methods converge to identical price vectors,
+showing high consistency and validating the model's numerical stability.
 
 #figure(
   table(columns: 5, rows: auto, ..csv("figures/pricing_comparison.csv").flatten()),
-  caption: [Comparison of optimal prices and royalties obtained using SLSQP and Trust-Region Constrained methods for multi-format royalty-constrained pricing.]
+  caption: [Comparison of optimal prices and royalties obtained using SLSQP and Trust-Region Constrained methods for multi-format royalty-constrained pricing.],
 )
 
+The results validate that our optimization framework yields price structures that are logically consistent, economically justified, and equitably aligned across publishing platforms.
+By assigning more affordable prices to higher-royalty platforms, the model simultaneously promotes reader accessibility and ensures author sustainability. This approach offers a transparent, data-driven methodology for principled price determination under practical royalty constraints. Ultimately, the computed values establish the minimum set prices to be adopted for MoKa Reads Collective’s forthcoming publications.
+
+= Conclusion
+
+// In this paper, we developed and applied a pricing optimization framework tailored to the needs of mission-driven, independent publishing initiatives such as the MoKa Reads Collective.
+// Grounded in the principle of “spend the least to support the most,” our model balances the dual objectives of affordability for readers and fair compensation for authors by integrating
+// platform-specific royalty constraints into a nonlinear optimization problem.
+
+// Through empirical market analysis, we established realistic pricing boundaries based on ebook page counts and demonstrated how price-per-page insights can inform initial price bounds.
+// The optimization model itself—formulated over normalized price variables and incorporating monotonicity constraints—was solved using robust, gradient-based methods (SLSQP and trust-region
+// constrained algorithms), which consistently converged to economically meaningful and structurally coherent solutions.
+
+// Our results validate the effectiveness of this model in producing pricing strategies that are logically ordered, reward high-royalty platforms with greater affordability, and remain flexible
+// across various publishing formats. The computed minimum set prices provide a principled foundation for future publication pricing by the MoKa Reads Collective, ensuring accessibility without
+// compromising financial sustainability.
+
+// By uniting data analysis, optimization theory, and publishing economics, this framework contributes a replicable and transparent method for socially-conscious pricing strategy in digital and print publishing.
+This paper presented a principled pricing optimization framework designed to balance reader affordability with author compensation under platform-specific royalty constraints. Grounded in the mission of the MoKa Reads Collective, our model uses nonlinear optimization with monotonicity and royalty-based constraints to generate fair, data-driven prices across multiple formats.
+
+Using SLSQP and trust-region methods, we demonstrated that the model consistently produces logically ordered and economically aligned prices, rewarding high-royalty platforms with greater affordability. The resulting minimum set prices offer a transparent and sustainable foundation for future MoKa Reads publications.
 #pagebreak()
 
 #heading(depth: 1, [Appendix], numbering: none)
 
 #heading(depth: 2, [A. Pseudo-Code], numbering: none)
 
-#rect(stroke: 1pt+black, outset: 10pt,
+#rect(
+  stroke: 1pt + black,
+  outset: 10pt,
   ```
   Inputs:
       n          ← number of publishing formats
@@ -264,7 +329,7 @@ With these parameters we have the following results for each corresponding forma
       Report:
           Total Price   = ∑ p_i
           Total Royalty = ∑ r_i * p_i
-  ```
+  ```,
 )
 
 #pagebreak()

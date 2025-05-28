@@ -2,7 +2,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 # Inputs
-royalties = np.array([0.87, 0.8, 0.7, 0.6, 0.55])
+royalties = np.array([0.925, 0.8, 0.7, 0.6, 0.55])
 n = len(royalties)
 
 # Global price bounds
