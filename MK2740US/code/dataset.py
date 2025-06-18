@@ -52,7 +52,9 @@ def fetch_books_from_google(query, max_results=1200, api_key=None):
                 "Format": format_,
                 "Price": price,
                 "Source": source,
-                "IsEbook": is_ebook
+                "IsEbook": is_ebook,
+                "Volume": volume, 
+                "Sale": sale, 
             })
 
         fetched += len(items)

@@ -7,12 +7,12 @@
       "directory": "MK2740US",
       "readme_path": "MK2740US/README.md"
     },
-    "MK0884MU": {
-      "title": "Toward a Safer BLAS: Compile-Time Optimized Matrix Operations in Zig",
+    "MK8697EG": {
+      "title": "Wait Your Turn: A Queue-Theoretic Foundation for Processor Scheduling",
       "author": "Mustafif Khan",
-      "date_added": "2025-05-28 15:14:33",
-      "directory": "MK0884MU",
-      "readme_path": "MK0884MU/README.md"
+      "date_added": "2025-06-08 17:41:39",
+      "directory": "MK8697EG",
+      "readme_path": "MK8697EG/README.md"
     }
   },
   "metadata": {

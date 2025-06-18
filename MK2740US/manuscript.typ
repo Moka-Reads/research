@@ -310,7 +310,7 @@ Using SLSQP and trust-region methods, we demonstrated that the model consistentl
 
   Define:
       p_i(x_i)     ← p_min + x_i * (p_max - p_min)
-      objective(x) ← ( -∑ r_i * p_i(x_i) + λ_p * (∑ p_i(x_i))^2 ) / n
+      objective(x_i) ← ( -∑ r_i * p_i(x_i) + λ_p * (∑ p_i(x_i))^2 ) / n
 
   Subject to constraints:
     For i = 1 to n - 1:
