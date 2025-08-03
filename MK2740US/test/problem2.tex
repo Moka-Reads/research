@@ -1,0 +1,258 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+\geometry{margin=1in}
+
+\title{Enhanced Multi-Platform Ebook Pricing Model}
+\author{Your Name}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Problem Formulation}
+
+\subsection{Decision Variables}
+Let $x_i \in [0,1]$ be the normalized price variable for platform $i$, where $i = 1, 2, \ldots, n$ platforms.
+
+The actual price is defined as:
+\begin{equation}
+	p_i(x_i) = p_{\min} + x_i(p_{\max} - p_{\min})
+\end{equation}
+
+This normalization allows optimization over the unit interval while mapping to actual prices within the global bounds.
+
+\subsection{Given Parameters}
+\begin{itemize}
+	\item $r_i$: Royalty rate for platform $i$ (as decimal, e.g., 0.70 for 70\%)
+	\item $m_i$: Market share/relative demand for platform $i$ (normalized so $\sum_{i=1}^n m_i = 1$)
+	\item $\bar{p}$: Average price from market data analysis
+	\item $\lambda_v$: Weight parameter for price variance penalty
+	\item $\lambda_d$: Weight parameter for deviation from market average penalty
+	\item $\lambda_c$: Weight parameter for competitive advantage penalty
+	\item $\alpha$: Discount factor for your store (e.g., 0.85 for 15\% discount advantage)
+\end{itemize}
+
+\subsection{Enhanced Objective Function}
+
+The multi-objective optimization problem becomes:
+\begin{equation}
+	\max_{x \in [0,1]^n} \left[ \text{Revenue} - \lambda_v \cdot \text{Variance} - \lambda_d \cdot \text{Deviation} - \lambda_c \cdot \text{Competitive Penalty} \right]
+\end{equation}
+
+Where:
+
+\textbf{Revenue Term:}
+\begin{equation}
+	\text{Revenue} = \sum_{i=1}^n r_i \cdot p_i(x_i) \cdot m_i \cdot f_i(x_i)
+\end{equation}
+
+\textbf{Price Variance Penalty:}
+\begin{equation}
+	\text{Variance} = \frac{1}{n} \sum_{i=1}^n (p_i(x_i) - \bar{p}_{\text{our}})^2
+\end{equation}
+where $\bar{p}_{\text{our}} = \frac{1}{n}\sum_{i=1}^n p_i(x_i)$ is the average price across all your platforms
+
+\textbf{Market Deviation Penalty:}
+\begin{equation}
+	\text{Deviation} = \left(\frac{1}{n}\sum_{i=1}^n p_i(x_i) - \bar{p}\right)^2
+\end{equation}
+
+\textbf{Competitive Advantage Penalty:}
+\begin{equation}
+	\text{Competitive Penalty} = \max(0, p_1(x_1) - \alpha \cdot \min_{j \neq 1} p_j(x_j))^2
+\end{equation}
+
+\subsection{Demand Function $f_i(x_i)$}
+To model price sensitivity, we use an exponential demand function:
+\begin{equation}
+	f_i(x_i) = e^{-\beta_i (p_i(x_i) - p_{\text{ref}})}
+\end{equation}
+
+Where:
+\begin{itemize}
+	\item $\beta_i > 0$ is the price sensitivity parameter for platform $i$
+	\item $p_{\text{ref}}$ is a reference price (could be $\bar{p}$ or platform-specific)
+\end{itemize}
+
+\section{Constraints}
+
+\subsection{Essential Bounds}
+\begin{equation}
+	0 \leq x_i \leq 1 \quad \forall i
+\end{equation}
+
+\subsection{Optional Monotonicity (from original paper)}
+If you want to preserve format hierarchy:
+\begin{equation}
+	x_{i+1} - x_i \geq \delta \quad \text{for ordered formats}
+\end{equation}
+
+Only use this if platforms have clear value ordering (e.g., hardcover $>$ paperback $>$ ebook).
+
+\subsection{Maximum Price Spread (Optional)}
+To prevent extreme price differences:
+\begin{equation}
+	\max_i p_i(x_i) - \min_i p_i(x_i) \leq \text{spread}_{\max}
+\end{equation}
+
+\section{Complete Mathematical Model}
+
+\subsection{Enhanced Objective with Soft Constraints}
+Convert to minimization problem for standard solvers:
+
+\begin{align}
+	\min_{x} \Bigg[ & -\sum_{i=1}^n r_i \cdot p_i(x_i) \cdot m_i \cdot e^{-\beta_i (p_i(x_i) - \bar{p})} \nonumber \\
+	                & + \lambda_v \sum_{i=1}^n (p_i(x_i) - \bar{p}_{\text{our}})^2 \nonumber                       \\
+	                & + \lambda_d \left(\bar{p}_{\text{our}} - \bar{p}\right)^2 \nonumber                          \\
+	                & + \lambda_c \cdot \max(0, p_1(x_1) - \alpha \cdot \min_{j \neq 1} p_j(x_j))^2 \Bigg]
+\end{align}
+
+Subject to:
+\begin{itemize}
+	\item $0 \leq x_i \leq 1 \quad \forall i$ (essential bounds only)
+	\item Optional monotonicity constraints if format hierarchy exists
+	\item Optional maximum spread constraint if needed
+\end{itemize}
+
+where $p_i(x_i) = p_{\min} + x_i(p_{\max} - p_{\min})$
+
+\section{Enhanced Seasonal Discount Strategy}
+
+We implement a sophisticated discount strategy that operates on multiple levels:
+
+\subsection{Multi-Level Discount Approach}
+
+\textbf{Level 1: Competitive Positioning}
+During discount periods, modify the competitive penalty:
+
+Regular periods ($t \notin D$):
+\begin{equation}
+	\lambda_c \cdot \max(0, p_1(x_1) - \alpha \cdot \min_{j \neq 1} p_j(x_j))^2
+\end{equation}
+
+Discount periods ($t \in D$):
+\begin{equation}
+	\lambda_c^{(D)} \cdot \max(0, p_1(x_1) - \alpha_{\text{discount}} \cdot \min_{j \neq 1} p_j(x_j))^2
+\end{equation}
+
+where $\alpha_{\text{discount}} \in [0.7, 0.85]$ and $\lambda_c^{(D)} > \lambda_c$ to strengthen competitive pressure.
+
+\textbf{Level 2: Revenue Rebalancing}
+Introduce discount-aware revenue weights:
+
+\begin{equation}
+	w_i^{(D)} = \begin{cases}
+		w_i \cdot (1 + \gamma) & \text{if } i = 1 \text{ (your store)} \\
+		w_i                    & \text{otherwise}
+	\end{cases}
+\end{equation}
+
+where $\gamma \in [0.2, 0.5]$ increases focus on your store's revenue during discount periods.
+
+\textbf{Level 3: Dynamic Market Share Adjustment}
+During discount periods, adjust effective market share to reflect increased traffic:
+
+\begin{equation}
+	m_i^{(D)} = \begin{cases}
+		m_i \cdot (1 + \theta \cdot d_i) & \text{where } d_i \text{ is discount depth} \\
+		m_i                              & \text{if no discount}
+	\end{cases}
+\end{equation}
+
+\subsection{Complete Discount Period Objective}
+
+During discount periods, the objective becomes:
+
+\begin{align}
+	\min_{x} \Bigg[ & -\sum_{i=1}^n w_i^{(D)} \cdot r_i \cdot p_i(x_i) \cdot m_i^{(D)} \cdot e^{-\beta_i (p_i(x_i) - \bar{p})} \nonumber \\
+	                & + \lambda_v \sum_{i=1}^n (p_i(x_i) - \bar{p}_{\text{our}})^2 \nonumber                                             \\
+	                & + \lambda_d \left(\bar{p}_{\text{our}} - \bar{p}\right)^2 \nonumber                                                \\
+	                & + \lambda_c^{(D)} \cdot \max(0, p_1(x_1) - \alpha_{\text{discount}} \cdot \min_{j \neq 1} p_j(x_j))^2 \Bigg]
+\end{align}
+
+\subsection{Discount Timing Strategy}
+
+\textbf{Strategic Timing:}
+\begin{itemize}
+	\item \textbf{Spring Sale:} March-April (tax refund season)
+	\item \textbf{Back-to-School:} August-September (educational content peak)
+\end{itemize}
+
+\textbf{Discount Parameters by Period:}
+\begin{center}
+	\begin{tabular}{|l|c|c|c|}
+		\hline
+		Period         & $\alpha_{\text{discount}}$ & $\gamma$ & Duration  \\
+		\hline
+		Regular        & $\alpha = 0.90$            & 0        & 10 months \\
+		Spring Sale    & 0.75                       & 0.3      & 4 weeks   \\
+		Back-to-School & 0.80                       & 0.4      & 6 weeks   \\
+		\hline
+	\end{tabular}
+\end{center}
+
+\subsection{Revenue Protection Mechanism}
+
+To ensure discounts don't hurt overall profitability:
+
+\textbf{Minimum Revenue Constraint:}
+\begin{equation}
+	\sum_{i=1}^n r_i \cdot p_i^{(D)}(x_i) \cdot m_i^{(D)} \geq \eta \cdot \sum_{i=1}^n r_i \cdot p_i^{(R)}(x_i) \cdot m_i
+\end{equation}
+
+where $\eta \in [0.85, 0.95]$ ensures discount period revenue is at least 85-95\% of regular period revenue, with the expectation that increased volume compensates.
+
+\section{Implementation Notes}
+
+\subsection{Parameter Selection}
+\begin{itemize}
+	\item $\lambda_v \in [0.1, 1.0]$: Controls price variance (higher = more uniform pricing)
+	\item $\lambda_d \in [0.1, 0.5]$: Controls deviation from market average
+	\item $\lambda_c \in [0.1, 2.0]$: Controls competitive advantage strength
+	\item $\beta_i$: Platform-specific elasticity (estimate from historical data)
+	\item $\alpha \in [0.8, 0.95]$: Competitive discount (20\% to 5\% advantage)
+\end{itemize}
+
+\subsection{Solver Recommendations}
+\begin{enumerate}
+	\item \textbf{SLSQP} (Sequential Least Squares Programming)
+	\item \textbf{Trust-Region Constrained}
+	\item \textbf{Interior Point Methods}
+\end{enumerate}
+
+\subsection{Multi-Objective Handling}
+Alternative approach using weighted sum:
+\begin{equation}
+	\min_{x} \left[ w_1 \cdot (-\text{Revenue}) + w_2 \cdot \text{Variance} + w_3 \cdot \text{Deviation} + w_4 \cdot \text{Competitive Penalty} \right]
+\end{equation}
+
+Where $w_1 + w_2 + w_3 + w_4 = 1$ and weights reflect business priorities.
+
+\section{Expected Benefits}
+
+\begin{enumerate}
+	\item \textbf{Revenue Maximization:} Accounts for platform-specific royalty rates and market shares
+	\item \textbf{Price Consistency:} Minimizes variance across platforms while allowing differentiation
+	\item \textbf{Market Alignment:} Stays close to market average prices for consumer acceptance
+	\item \textbf{Competitive Advantage:} Encourages your store to maintain pricing advantage through soft constraints
+	\item \textbf{Flexibility:} Seasonal discount capabilities built into penalty structure
+	\item \textbf{Data-Driven:} Incorporates actual market data and platform characteristics
+\end{enumerate}
+
+\section{Extensions}
+
+\begin{enumerate}
+	\item \textbf{Dynamic Pricing:} Time-varying parameters based on sales data
+	\item \textbf{Cannibalization Effects:} Cross-platform demand interactions
+	\item \textbf{Bundle Pricing:} Multi-book pricing strategies
+	\item \textbf{A/B Testing Framework:} Experimental price variations for parameter estimation
+\end{enumerate}
+
+\end{document}
